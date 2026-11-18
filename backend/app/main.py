@@ -194,7 +194,7 @@ def create_transfer(
         amount=payload.monto,
         idempotency_key=idempotency_key,
         correlation_id=request.state.correlation_id,
-        ip_origin=ip,
+        ip_origen=ip,
     )
 
     return {
@@ -242,7 +242,7 @@ def reverse_transfer_endpoint(
         transfer_id=transfer_id,
         operator_id=operator.id,
         correlation_id=request.state.correlation_id,
-        ip_origin=ip,
+        ip_origen=ip,
     )
     return {
         "id": transfer.id,

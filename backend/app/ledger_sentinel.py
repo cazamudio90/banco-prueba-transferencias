@@ -76,7 +76,7 @@ class LedgerSentinel:
         amount: Decimal,
         idempotency_key: str,
         correlation_id: str = None,
-        ip_origin: str = None
+        ip_origen: str = None
     ) -> Transferencia:
         # 1. Idempotencia (RF6)
         existing = self.db.query(Transferencia).filter_by(idempotency_key=idempotency_key).first()
@@ -172,7 +172,7 @@ class LedgerSentinel:
                 accion="TRANSFERENCIA_COMPLETADA",
                 detalle=f"Transferencia #{transfer.id} por {amount} {origin_acc.moneda}",
                 correlation_id=correlation_id,
-                ip_origen=ip_origin,
+                ip_origen=ip_origen,
                 fecha=now
             )
             outbox_event = Outbox(
@@ -206,7 +206,7 @@ class LedgerSentinel:
         transfer_id: int,
         operator_id: int,
         correlation_id: str = None,
-        ip_origin: str = None
+        ip_origen: str = None
     ) -> Transferencia:
         try:
             transfer = self.db.query(Transferencia).filter_by(id=transfer_id).with_for_update().first()
@@ -230,61 +230,69 @@ class LedgerSentinel:
             dest_balance = Decimal(str(dest_acc.saldo))
             amount_dest = Decimal(str(transfer.monto_destino))
             if dest_balance < amount_dest:
-            raise HTTPException(status_code=400, detail="La cuenta destino no tiene saldo suficiente para reversar.")
+                raise HTTPException(status_code=400, detail="La cuenta destino no tiene saldo suficiente para reversar.")
+
             origin_balance = Decimal(str(origin_acc.saldo))
             amount_orig = Decimal(str(transfer.monto_origen))
+
             new_dest_balance = dest_balance - amount_dest
             new_origin_balance = origin_balance + amount_orig
+
             dest_acc.saldo = new_dest_balance
             origin_acc.saldo = new_origin_balance
+
             transfer.estado = "REVERSADA"
             transfer.reversado_en = now
             transfer.reversado_por_id = operator_id
+
             # Contra-asientos inmutables (RF5)
             mov_rev_debit = Movimiento(
-            cuenta_id=dest_acc.id,
-            transferencia_id=transfer.id,
-            tipo="REVERSA_DEBITO",
-            monto=amount_dest,
-            saldo_anterior=dest_balance,
-            saldo_posterior=new_dest_balance,
-            descripcion=f"Reversa de transferencia #{transfer.id}",
-            fecha=now
+                cuenta_id=dest_acc.id,
+                transferencia_id=transfer.id,
+                tipo="REVERSA_DEBITO",
+                monto=amount_dest,
+                saldo_anterior=dest_balance,
+                saldo_posterior=new_dest_balance,
+                descripcion=f"Reversa de transferencia #{transfer.id}",
+                fecha=now
             )
             mov_rev_credit = Movimiento(
-            cuenta_id=origin_acc.id,
-            transferencia_id=transfer.id,
-            tipo="REVERSA_CREDITO",
-            monto=amount_orig,
-            saldo_anterior=origin_balance,
-            saldo_posterior=new_origin_balance,
-            descripcion=f"Devolución por reversa de transferencia #{transfer.id}",
-            fecha=now
+                cuenta_id=origin_acc.id,
+                transferencia_id=transfer.id,
+                tipo="REVERSA_CREDITO",
+                monto=amount_orig,
+                saldo_anterior=origin_balance,
+                saldo_posterior=new_origin_balance,
+                descripcion=f"Devolución por reversa de transferencia #{transfer.id}",
+                fecha=now
             )
             self.db.add_all([mov_rev_debit, mov_rev_credit])
+
             audit = Auditoria(
-            usuario_id=operator_id,
-            accion="TRANSFERENCIA_REVERSADA",
-            detalle=f"Operador reversó transferencia #{transfer.id}",
-            correlation_id=correlation_id,
-            ip_origen=ip_origin,
-            fecha=now
+                usuario_id=operator_id,
+                accion="TRANSFERENCIA_REVERSADA",
+                detalle=f"Operador reversó transferencia #{transfer.id}",
+                correlation_id=correlation_id,
+                ip_origen=ip_origen,
+                fecha=now
             )
             outbox_event = Outbox(
-            aggregate_type="TRANSFERENCIA",
-            aggregate_id=transfer.id,
-            event_type="TRANSFERENCIA_REVERSADA",
-            payload=json.dumps({"transfer_id": transfer.id, "estado": "REVERSADA"}),
-            estado="PENDIENTE",
-            creado_en=now
+                aggregate_type="TRANSFERENCIA",
+                aggregate_id=transfer.id,
+                event_type="TRANSFERENCIA_REVERSADA",
+                payload=json.dumps({"transfer_id": transfer.id, "estado": "REVERSADA"}),
+                estado="PENDIENTE",
+                creado_en=now
             )
             self.db.add_all([audit, outbox_event])
+
             self.db.commit()
             self.db.refresh(transfer)
             return transfer
-            except HTTPException:
+
+        except HTTPException:
             self.db.rollback()
             raise
-            except Exception as e:
+        except Exception as e:
             self.db.rollback()
             raise HTTPException(status_code=500, detail=f"Error al reversar transferencia: {str(e)}")

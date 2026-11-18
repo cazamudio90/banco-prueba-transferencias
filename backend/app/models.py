@@ -13,7 +13,7 @@ class Usuario(Base):
     intentos_fallidos = Column(Integer, default=0, nullable=False)
     bloqueado_hasta = Column(DateTime, nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
-    creado_en = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    creado_en = Column(DateTime, server_default=func.now(), nullable=False)
 
 class Cuenta(Base):
     __tablename__ = "tbq_cuentas"
@@ -24,7 +24,7 @@ class Cuenta(Base):
     moneda = Column(String(3), nullable=False)
     saldo = Column(Numeric(18, 2), default=0, nullable=False)
     activa = Column(Boolean, default=True, nullable=False)
-    creado_en = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    creado_en = Column(DateTime, server_default=func.now(), nullable=False)
 
 class TipoCambio(Base):
     __tablename__ = "tbq_tipos_cambio"
@@ -34,7 +34,7 @@ class TipoCambio(Base):
     moneda_destino = Column(String(3), nullable=False)
     tasa_compra = Column(Numeric(18, 6), nullable=False)
     tasa_venta = Column(Numeric(18, 6), nullable=False)
-    vigente_desde = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    vigente_desde = Column(DateTime, server_default=func.now(), nullable=False)
 
 class Transferencia(Base):
     __tablename__ = "tbq_transferencias"
@@ -50,7 +50,7 @@ class Transferencia(Base):
     tasa_aplicada = Column(Numeric(18, 6), default=1, nullable=False)
     estado = Column(String(20), nullable=False)
     motivo_rechazo = Column(String(255), nullable=True)
-    creado_en = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    creado_en = Column(DateTime, server_default=func.now(), nullable=False)
     completado_en = Column(DateTime, nullable=True)
     reversado_en = Column(DateTime, nullable=True)
     reversado_por_id = Column(Integer, ForeignKey("tbq_usuarios.id"), nullable=True)
@@ -66,7 +66,7 @@ class Movimiento(Base):
     saldo_anterior = Column(Numeric(18, 2), nullable=False)
     saldo_posterior = Column(Numeric(18, 2), nullable=False)
     descripcion = Column(String(255), nullable=False)
-    fecha = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    fecha = Column(DateTime, server_default=func.now(), nullable=False)
 
 class Auditoria(Base):
     __tablename__ = "tbq_auditoria"
@@ -77,7 +77,7 @@ class Auditoria(Base):
     detalle = Column(String(500), nullable=False)
     correlation_id = Column(String(64), nullable=True)
     ip_origen = Column(String(45), nullable=True)
-    fecha = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    fecha = Column(DateTime, server_default=func.now(), nullable=False)
 
 class Outbox(Base):
     __tablename__ = "tbq_outbox"
@@ -89,5 +89,5 @@ class Outbox(Base):
     payload = Column(Text, nullable=False)
     estado = Column(String(20), default="PENDIENTE", nullable=False)
     intentos = Column(Integer, default=0, nullable=False)
-    creado_en = Column(DateTime, server_default=func.sysutcdatetime(), nullable=False)
+    creado_en = Column(DateTime, server_default=func.now(), nullable=False)
     procesado_en = Column(DateTime, nullable=True)
